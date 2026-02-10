@@ -2,9 +2,10 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { PeptideResult, ResearchInsight } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Client initialized lazily inside function
 
 export const getPeptideInsights = async (peptides: PeptideResult[]): Promise<ResearchInsight> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   const sequences = peptides.map(p => p.sequence).join(', ');
   
   const prompt = `Analyze this batch of generated antimicrobial peptides for a Q1 journal publication: ${sequences}. 

@@ -1,41 +1,40 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Dna, 
-  FlaskConical, 
-  Download, 
-  Settings2, 
-  BarChart3, 
-  Sparkles, 
-  Loader2, 
-  BookOpen, 
-  ClipboardList, 
-  Check, 
-  Microscope, 
-  ChevronLeft, 
+import {
+  Dna,
+  FlaskConical,
+  Download,
+  Settings2,
+  BarChart3,
+  Sparkles,
+  Loader2,
+  ClipboardList,
+  Check,
+  Microscope,
+  ChevronLeft,
   Menu,
   Database,
   Search,
   Zap
 } from 'lucide-react';
-import { 
-  GenerationMethod, 
-  PeptideFunctionality, 
-  PeptideResult, 
+import {
+  GenerationMethod,
+  PeptideFunctionality,
+  PeptideResult,
   GenerationParams,
-  ResearchInsight 
+  ResearchInsight
 } from './types';
 import PeptideTable from './components/PeptideTable';
 import PhysicochemicalAnalysis from './components/PhysicochemicalAnalysis';
-import { getPeptideInsights } from './services/geminiService';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
+
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
   Cell
 } from 'recharts';
 
@@ -64,8 +63,7 @@ const App: React.FC = () => {
   const [results, setResults] = useState<PeptideResult[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
-  const [insight, setInsight] = useState<ResearchInsight | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
   const [activeTab, setActiveTab] = useState<'sequences' | 'biophysics'>('sequences');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -83,9 +81,9 @@ const App: React.FC = () => {
 
   const generatePeptides = async () => {
     setIsGenerating(true);
-    setInsight(null);
+
     setIsSidebarOpen(false);
-    
+
     // Simulate complex computation/API calls
     await new Promise(resolve => setTimeout(resolve, 3500));
 
@@ -118,20 +116,15 @@ const App: React.FC = () => {
 
     setResults(allGenerated);
     setIsGenerating(false);
-    analyzeWithGemini(allGenerated);
+
   };
 
-  const analyzeWithGemini = async (peptides: PeptideResult[]) => {
-    setIsAnalyzing(true);
-    const researchInsight = await getPeptideInsights(peptides);
-    setInsight(researchInsight);
-    setIsAnalyzing(false);
-  };
+
 
   const downloadData = (format: 'fasta' | 'csv' | 'json') => {
     let content = "";
     let fileName = `multipep_generation_${Date.now()}`;
-    
+
     if (format === 'fasta') {
       content = results.map(p => `>${p.id} | model=${p.modelSource} | p=${(Object.values(p.probabilities)[0] as number).toFixed(3)}\n${p.sequence}`).join('\n');
       fileName += ".fasta";
@@ -159,7 +152,7 @@ const App: React.FC = () => {
       if (isSelected && prev.methods.length === 1) return prev;
       return {
         ...prev,
-        methods: isSelected 
+        methods: isSelected
           ? prev.methods.filter(m => m !== method)
           : [...prev.methods, method]
       };
@@ -187,10 +180,9 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex bg-[#f8fafc] overflow-hidden">
       {/* Retractable Sidebar */}
-      <aside 
-        className={`bg-white border-r border-slate-200 transition-all duration-500 ease-in-out relative flex flex-col shadow-sm z-30 ${
-          isSidebarOpen ? 'w-full lg:w-[420px]' : 'w-0 lg:w-0 overflow-hidden opacity-0 -translate-x-full'
-        }`}
+      <aside
+        className={`bg-white border-r border-slate-200 transition-all duration-500 ease-in-out relative flex flex-col shadow-sm z-30 ${isSidebarOpen ? 'w-full lg:w-[420px]' : 'w-0 lg:w-0 overflow-hidden opacity-0 -translate-x-full'
+          }`}
       >
         <div className="p-8 overflow-y-auto flex-1 flex flex-col gap-8 min-w-[420px]">
           <div className="flex items-center justify-between">
@@ -203,7 +195,7 @@ const App: React.FC = () => {
                 <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest">Research Suite 3.0</p>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setIsSidebarOpen(false)}
               className="lg:flex hidden p-2 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"
               title="Retract Panel"
@@ -222,11 +214,10 @@ const App: React.FC = () => {
                   <button
                     key={m}
                     onClick={() => toggleMethod(m)}
-                    className={`px-4 py-3 rounded-xl text-left text-sm font-medium transition-all border flex items-center justify-between ${
-                      params.methods.includes(m) 
-                      ? 'bg-blue-50 border-blue-600 text-blue-700 shadow-sm' 
+                    className={`px-4 py-3 rounded-xl text-left text-sm font-medium transition-all border flex items-center justify-between ${params.methods.includes(m)
+                      ? 'bg-blue-50 border-blue-600 text-blue-700 shadow-sm'
                       : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
-                    }`}
+                      }`}
                   >
                     {m}
                     {params.methods.includes(m) && <Check size={16} className="text-blue-600" />}
@@ -244,11 +235,10 @@ const App: React.FC = () => {
                   <button
                     key={f}
                     onClick={() => toggleFunctionality(f)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
-                      params.functionalities.includes(f)
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${params.functionalities.includes(f)
                       ? 'bg-emerald-500 border-emerald-500 text-white shadow-md'
                       : 'bg-white border-slate-200 text-slate-600 hover:border-blue-400'
-                    }`}
+                      }`}
                   >
                     {f}
                   </button>
@@ -259,8 +249,8 @@ const App: React.FC = () => {
             <section className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Count per Model</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   value={params.count}
                   onChange={e => setParams(p => ({ ...p, count: Number(e.target.value) }))}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -268,8 +258,8 @@ const App: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Threshold (%)</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   step="0.05"
                   min="0"
                   max="1"
@@ -280,8 +270,8 @@ const App: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Min Length</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   value={params.minLength}
                   onChange={e => setParams(p => ({ ...p, minLength: Number(e.target.value) }))}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -289,8 +279,8 @@ const App: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Max Length</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   value={params.maxLength}
                   onChange={e => setParams(p => ({ ...p, maxLength: Number(e.target.value) }))}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -305,11 +295,10 @@ const App: React.FC = () => {
                   <button
                     key={aa}
                     onClick={() => toggleExcludedAA(aa)}
-                    className={`w-7 h-7 flex items-center justify-center rounded text-[10px] font-bold transition-all border ${
-                      params.excludedAminoAcids.includes(aa)
+                    className={`w-7 h-7 flex items-center justify-center rounded text-[10px] font-bold transition-all border ${params.excludedAminoAcids.includes(aa)
                       ? 'bg-red-500 border-red-500 text-white'
                       : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-200'
-                    }`}
+                      }`}
                   >
                     {aa}
                   </button>
@@ -341,7 +330,7 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto bg-slate-50/50 relative">
         {!isSidebarOpen && !isGenerating && (
-          <button 
+          <button
             onClick={() => setIsSidebarOpen(true)}
             className="fixed top-8 left-8 z-40 p-3 bg-white border border-slate-200 rounded-xl shadow-lg text-blue-600 hover:bg-blue-50 transition-all hover:scale-110 active:scale-95 animate-in fade-in zoom-in duration-300"
             title="Open Configuration"
@@ -378,8 +367,8 @@ const App: React.FC = () => {
               </div>
               <div className="flex gap-1.5">
                 {LOADING_STEPS.map((_, i) => (
-                  <div 
-                    key={i} 
+                  <div
+                    key={i}
                     className={`h-1.5 rounded-full transition-all duration-500 ${i <= loadingStep ? 'w-8 bg-blue-600' : 'w-2 bg-slate-200'}`}
                   />
                 ))}
@@ -402,15 +391,15 @@ const App: React.FC = () => {
                   <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Sequence Analysis Workbench</h2>
                   <p className="text-slate-500 mt-1 font-medium">Review, filter, and compare your antimicrobial candidates.</p>
                 </div>
-                
+
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     onClick={() => downloadData('fasta')}
                     className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
                   >
                     <Download size={16} /> FASTA
                   </button>
-                  <button 
+                  <button
                     onClick={() => downloadData('csv')}
                     className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
                   >
@@ -421,13 +410,13 @@ const App: React.FC = () => {
 
               {/* View Tabs */}
               <div className="flex border-b border-slate-200">
-                <button 
+                <button
                   onClick={() => setActiveTab('sequences')}
                   className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'sequences' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
                 >
                   Sequences & Scores
                 </button>
-                <button 
+                <button
                   onClick={() => setActiveTab('biophysics')}
                   className={`px-6 py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 ${activeTab === 'biophysics' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
                 >
@@ -437,7 +426,7 @@ const App: React.FC = () => {
 
               {activeTab === 'sequences' ? (
                 <>
-                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 gap-6">
                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-bold text-slate-800 flex items-center gap-2"><BarChart3 size={18} className="text-blue-600" /> Model Performance</h4>
@@ -449,15 +438,15 @@ const App: React.FC = () => {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                             <XAxis dataKey="id" hide />
                             <YAxis domain={[0, 1]} />
-                            <Tooltip 
+                            <Tooltip
                               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                               formatter={(val: number) => [`${(val * 100).toFixed(1)}%`, 'Probability']}
                             />
                             <Bar dataKey={(p) => (Object.values((p as PeptideResult).probabilities)[0] as number)} radius={[4, 4, 0, 0]}>
                               {results.map((entry, index) => (
-                                <Cell 
-                                  key={`cell-${index}`} 
-                                  fill={entry.modelSource === GenerationMethod.PREDICTION ? '#8b5cf6' : '#6366f1'} 
+                                <Cell
+                                  key={`cell-${index}`}
+                                  fill={entry.modelSource === GenerationMethod.PREDICTION ? '#8b5cf6' : '#6366f1'}
                                 />
                               ))}
                             </Bar>
@@ -466,41 +455,7 @@ const App: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="xl:col-span-2 bg-gradient-to-br from-indigo-600 to-blue-800 p-6 rounded-2xl border border-white/10 shadow-2xl relative overflow-hidden group">
-                      <div className="absolute top-0 right-0 p-8 opacity-10 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform">
-                        <Sparkles size={120} className="text-white" />
-                      </div>
-                      <div className="relative z-10 flex flex-col h-full">
-                        <div className="flex items-center gap-2 mb-4 text-blue-100">
-                          <BookOpen size={18} />
-                          <span className="text-xs font-bold uppercase tracking-widest">Comparative Analysis (AI Synthesis)</span>
-                        </div>
-                        {isAnalyzing ? (
-                          <div className="flex-1 flex flex-col items-center justify-center text-white/80 gap-3">
-                            <Loader2 className="animate-spin" size={32} />
-                            <p className="font-medium animate-pulse">Gemini 3 is comparing model architectures...</p>
-                          </div>
-                        ) : insight ? (
-                          <div className="flex-1 flex flex-col gap-4">
-                            <p className="text-lg font-medium text-white leading-relaxed">{insight.summary}</p>
-                            <div className="grid grid-cols-2 gap-4 mt-auto">
-                              <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md">
-                                <h5 className="text-[10px] font-bold text-blue-200 uppercase mb-2">Structural Observations</h5>
-                                <p className="text-xs text-white/90 leading-tight">{insight.structuralNotes}</p>
-                              </div>
-                              <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md">
-                                <h5 className="text-[10px] font-bold text-blue-200 uppercase mb-2">Targeted Usage</h5>
-                                <div className="flex flex-wrap gap-1">
-                                  {insight.potentialApplications.map(app => (
-                                    <span key={app} className="text-[9px] bg-white/20 text-white px-1.5 py-0.5 rounded-md">{app}</span>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
+
                   </div>
                   <PeptideTable peptides={results} />
                 </>
