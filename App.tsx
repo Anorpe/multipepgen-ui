@@ -25,13 +25,15 @@ import {
   Menu,
   Database,
   Search,
-  Zap
+  Zap,
+  Layers
 } from 'lucide-react';
 import {
   GenerationMethod,
   PeptideFunctionality,
   PeptideResult,
   GenerationParams,
+  FilterParams,
   ResearchInsight
 } from './types';
 import PeptideTable from './components/PeptideTable';
@@ -53,7 +55,10 @@ const App: React.FC = () => {
   const [params, setParams] = useState<GenerationParams>({
     count: 10,
     methods: [GenerationMethod.PREDICTION],
-    functionalities: [PeptideFunctionality.ANTIBACTERIAL],
+    functionalities: [PeptideFunctionality.ANTIBACTERIAL]
+  });
+
+  const [filterParams, setFilterParams] = useState<FilterParams>({
     excludedAminoAcids: [],
     minLength: 12,
     maxLength: 30,
@@ -61,6 +66,17 @@ const App: React.FC = () => {
   });
 
   const [results, setResults] = useState<PeptideResult[]>([]);
+
+  // Apply Client-Side Filters
+  const filteredResults = results.filter(p => {
+    const score = p.consensusScore || (Object.values(p.probabilities)[0] as number);
+    const meetsThreshold = score >= filterParams.threshold;
+    const meetsLength = p.length >= filterParams.minLength && p.length <= filterParams.maxLength;
+    const hasExcludedAA = filterParams.excludedAminoAcids.some(aa => p.sequence.includes(aa));
+
+    return meetsThreshold && meetsLength && !hasExcludedAA;
+  });
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
 
@@ -85,7 +101,17 @@ const App: React.FC = () => {
 
     try {
       // 1. Generate Sequences
-      const remoteData = await generatePeptidesRemote(params);
+      // Only pass core generation params to API
+      const remoteData = await generatePeptidesRemote({
+        count: params.count,
+        methods: params.methods,
+        functionalities: params.functionalities,
+        // The API might still expect these fields if strict strict, passing safely
+        excludedAminoAcids: [],
+        minLength: 0,
+        maxLength: 100,
+        threshold: 0
+      } as any); // Cast as any if API requires full Params, or update API definition later
 
       // 2. Collect all sequences for prediction
       const allSequences = [
@@ -221,7 +247,7 @@ const App: React.FC = () => {
   };
 
   const toggleExcludedAA = (aa: string) => {
-    setParams(prev => ({
+    setFilterParams(prev => ({
       ...prev,
       excludedAminoAcids: prev.excludedAminoAcids.includes(aa)
         ? prev.excludedAminoAcids.filter(a => a !== aa)
@@ -297,65 +323,39 @@ const App: React.FC = () => {
               </div>
             </section>
 
-            <section className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Count per Model</label>
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                  <Layers size={16} /> Sequences per Model
+                </label>
+                <div className="flex items-center bg-slate-100 rounded-lg px-2 py-1 border border-slate-200">
+                  <input
+                    type="number"
+                    value={params.count}
+                    min="1"
+                    max="100"
+                    onChange={e => setParams(p => ({ ...p, count: Math.min(100, Math.max(1, Number(e.target.value))) }))}
+                    className="w-12 bg-transparent text-right text-xs font-bold text-slate-700 outline-none"
+                  />
+                  <span className="text-[10px] text-slate-400 font-bold ml-1">SEQ</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                 <input
-                  type="number"
-                  value={params.count}
+                  type="range"
                   min="1"
                   max="100"
-                  onChange={e => setParams(p => ({ ...p, count: Math.min(100, Math.max(1, Number(e.target.value))) }))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  step="1"
+                  value={params.count}
+                  onChange={e => setParams(p => ({ ...p, count: Number(e.target.value) }))}
+                  className="w-full accent-blue-600 mb-2 cursor-pointer"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Threshold (%)</label>
-                <input
-                  type="number"
-                  step="0.05"
-                  min="0"
-                  max="1"
-                  value={params.threshold}
-                  onChange={e => setParams(p => ({ ...p, threshold: Number(e.target.value) }))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Min Length</label>
-                <input
-                  type="number"
-                  value={params.minLength}
-                  onChange={e => setParams(p => ({ ...p, minLength: Number(e.target.value) }))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Max Length</label>
-                <input
-                  type="number"
-                  value={params.maxLength}
-                  onChange={e => setParams(p => ({ ...p, maxLength: Number(e.target.value) }))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                />
-              </div>
-            </section>
-
-            <section>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-3">Excluded Residues</label>
-              <div className="grid grid-cols-10 gap-1">
-                {AMINO_ACIDS.map(aa => (
-                  <button
-                    key={aa}
-                    onClick={() => toggleExcludedAA(aa)}
-                    className={`w-7 h-7 flex items-center justify-center rounded text-[10px] font-bold transition-all border ${params.excludedAminoAcids.includes(aa)
-                      ? 'bg-red-500 border-red-500 text-white'
-                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-200'
-                      }`}
-                  >
-                    {aa}
-                  </button>
-                ))}
+                <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                  <span>1 seq</span>
+                  <span>50 seq</span>
+                  <span>100 seq</span>
+                </div>
               </div>
             </section>
 
@@ -439,25 +439,86 @@ const App: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-8 animate-in fade-in duration-700">
-              <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                <div>
-                  <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Sequence Analysis Workbench</h2>
-                  <p className="text-slate-500 mt-1 font-medium">Review, filter, and compare your antimicrobial candidates.</p>
+              <header className="flex flex-col gap-6 mb-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Sequence Analysis Workbench</h2>
+                    <p className="text-slate-500 mt-1 font-medium">Review, filter, and compare your antimicrobial candidates.</p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => downloadData('fasta')}
+                      className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+                    >
+                      <Download size={16} /> FASTA
+                    </button>
+                    <button
+                      onClick={() => downloadData('csv')}
+                      className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+                    >
+                      <Download size={16} /> CSV
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => downloadData('fasta')}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
-                  >
-                    <Download size={16} /> FASTA
-                  </button>
-                  <button
-                    onClick={() => downloadData('csv')}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
-                  >
-                    <Download size={16} /> CSV
-                  </button>
+                {/* New Horizontal Filter Bar */}
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row items-center gap-6">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="w-32">
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Threshold ({filterParams.threshold})</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={filterParams.threshold}
+                        onChange={e => setFilterParams(p => ({ ...p, threshold: Number(e.target.value) }))}
+                        className="w-full accent-blue-600"
+                      />
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Min Len</label>
+                        <input
+                          type="number"
+                          value={filterParams.minLength}
+                          onChange={e => setFilterParams(p => ({ ...p, minLength: Number(e.target.value) }))}
+                          className="w-16 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                        />
+                      </div>
+                      <span className="text-slate-300 self-end mb-2">-</span>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Max Len</label>
+                        <input
+                          type="number"
+                          value={filterParams.maxLength}
+                          onChange={e => setFilterParams(p => ({ ...p, maxLength: Number(e.target.value) }))}
+                          className="w-16 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="w-px h-10 bg-slate-200 lg:block hidden"></div>
+
+                  <div className="flex-1 w-full">
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Excluded Residues</label>
+                    <div className="flex flex-wrap gap-1">
+                      {AMINO_ACIDS.map(aa => (
+                        <button
+                          key={aa}
+                          onClick={() => toggleExcludedAA(aa)}
+                          className={`w-6 h-6 flex items-center justify-center rounded text-[10px] font-bold transition-all border ${filterParams.excludedAminoAcids.includes(aa)
+                            ? 'bg-red-500 border-red-500 text-white'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-200'
+                            }`}
+                        >
+                          {aa}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </header>
 

@@ -38,8 +38,11 @@ export interface PeptideResult {
 
 export interface GenerationParams {
   count: number;
-  methods: GenerationMethod[]; // Changed from single method to array
+  methods: GenerationMethod[];
   functionalities: PeptideFunctionality[];
+}
+
+export interface FilterParams {
   excludedAminoAcids: string[];
   minLength: number;
   maxLength: number;
