@@ -22,6 +22,18 @@ export interface PeptideResult {
   isoelectricPoint: number;
   hydrophobicity: number;
   modelSource: GenerationMethod;
+  // New fields from API
+  charge?: number;
+  hydrophobicMoment?: number;
+  bomanIndex?: number;
+  transmembraneHelices?: string;
+  wimley?: number;
+  xgboostScore?: number;
+  randomForestScore?: number;
+  neuralNetworkScore?: number;
+  decisionTreeScore?: number;
+  logisticRegressionScore?: number;
+  consensusScore?: number;
 }
 
 export interface GenerationParams {

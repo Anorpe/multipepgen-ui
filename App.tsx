@@ -112,8 +112,18 @@ const App: React.FC = () => {
           const seqLen = sequence.length;
 
           // Use XGBoost score as the main probability (scaled 0-1)
-          // If prediction failed, fallback to a reasonable default
-          const probability = pred ? (pred['XGboost'] / 100) : 0.85;
+          // Default to 0 if prediction failed/missing
+          const probability = pred ? (pred['XGboost'] / 100) : 0;
+
+          // Calculate Consensus Score
+          const scores = [
+            pred ? pred['XGboost'] : 0,
+            pred ? pred['Bosque Aleatorio'] : 0,
+            pred ? pred['Red Neuronal'] : 0,
+            pred ? pred['Arbol de Decisión'] : 0,
+            pred ? pred['Regresión Lógistica'] : 0
+          ];
+          const consensus = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
 
           return {
             id: `pep-${method === GenerationMethod.PREDICTION ? 'P' : 'S'}-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
@@ -122,11 +132,27 @@ const App: React.FC = () => {
             probabilities: {
               [params.functionalities[0]]: probability
             },
-            // API doesn't return MW, so we approximate it (avg AA weight ~110 Da)
-            molecularWeight: seqLen * 110.0,
-            isoelectricPoint: pred ? pred['punto isoelectrico'] : 7.0,
+            modelSource: method,
+
+            // Map real physicochemical properties from API
+            molecularWeight: seqLen * 110.0, // API doesn't return MW, keeping approx
+            isoelectricPoint: pred ? pred['punto isoelectrico'] : 0,
             hydrophobicity: pred ? pred['porcentaje hidrofobico'] : 0,
-            modelSource: method
+            charge: pred ? pred['carga'] : 0,
+            hydrophobicMoment: pred ? pred['momento hidrofobico'] : 0,
+            bomanIndex: pred ? pred['indice de boman'] : 0,
+            wimley: pred ? pred['wimley'] : 0,
+            transmembraneHelices: pred ? pred['helices transmembrana'] : 'unknown',
+
+            // Individual Scores
+            xgboostScore: pred ? pred['XGboost'] : 0,
+            randomForestScore: pred ? pred['Bosque Aleatorio'] : 0,
+            neuralNetworkScore: pred ? pred['Red Neuronal'] : 0,
+            decisionTreeScore: pred ? pred['Arbol de Decisión'] : 0,
+            logisticRegressionScore: pred ? pred['Regresión Lógistica'] : 0,
+
+            // Final Consensus
+            consensusScore: consensus
           };
         });
       };
