@@ -12,8 +12,8 @@ services:
       - LETSENCRYPT_HOST=multipepgen.medellin.unal.edu.co
       - LETSENCRYPT_EMAIL=laboratorio@medellin.unal.edu.co
     networks:
-      - peptools_network
+      - inverpep_default
 
 networks:
-  peptools_network:
+  inverpep_default:
     external: true
