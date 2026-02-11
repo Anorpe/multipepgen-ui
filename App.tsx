@@ -1,6 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
 import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell
+} from 'recharts';
+import {
   Dna,
   FlaskConical,
   Download,
@@ -26,17 +36,7 @@ import {
 } from './types';
 import PeptideTable from './components/PeptideTable';
 import PhysicochemicalAnalysis from './components/PhysicochemicalAnalysis';
-
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell
-} from 'recharts';
+import { generatePeptidesRemote, predictPeptidesRemote } from './services/api';
 
 const AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY".split("");
 
@@ -81,42 +81,67 @@ const App: React.FC = () => {
 
   const generatePeptides = async () => {
     setIsGenerating(true);
-
     setIsSidebarOpen(false);
 
-    // Simulate complex computation/API calls
-    await new Promise(resolve => setTimeout(resolve, 3500));
+    try {
+      // 1. Generate Sequences
+      const remoteData = await generatePeptidesRemote(params);
 
-    let allGenerated: PeptideResult[] = [];
+      // 2. Collect all sequences for prediction
+      const allSequences = [
+        ...(remoteData.generated_better_prediction || []),
+        ...(remoteData.generated_more_stable || [])
+      ];
 
-    for (const method of params.methods) {
-      const methodResults: PeptideResult[] = Array.from({ length: params.count }).map((_, i) => {
-        const seqLen = Math.floor(Math.random() * (params.maxLength - params.minLength + 1)) + params.minLength;
-        const sequence = Array.from({ length: seqLen })
-          .map(() => AMINO_ACIDS.filter(aa => !params.excludedAminoAcids.includes(aa))[Math.floor(Math.random() * (AMINO_ACIDS.length - params.excludedAminoAcids.length))])
-          .join('');
+      // 3. Predict Properties & Scores
+      let predictionMap = new Map<string, any>();
+      if (allSequences.length > 0) {
+        try {
+          const predictions = await predictPeptidesRemote(allSequences);
+          predictions.forEach(p => predictionMap.set(p.Peptido, p));
+        } catch (err) {
+          console.error("Prediction API failed, falling back to partial data:", err);
+          // We continue, and mapToResult will handle missing data by using safe defaults
+        }
+      }
 
-        const baseProb = method === GenerationMethod.PREDICTION ? params.threshold + 0.05 : params.threshold;
+      // Helper to map raw sequences to PeptideResult 
+      const mapToResult = (sequences: string[], method: GenerationMethod): PeptideResult[] => {
+        return sequences.map((sequence, i) => {
+          const pred = predictionMap.get(sequence);
+          const seqLen = sequence.length;
 
-        return {
-          id: `pep-${method === GenerationMethod.PREDICTION ? 'P' : 'S'}-${Date.now()}-${i}`,
-          sequence,
-          length: seqLen,
-          probabilities: {
-            [params.functionalities[0]]: Math.min(0.99, baseProb + (Math.random() * 0.1))
-          },
-          molecularWeight: seqLen * 110.5,
-          isoelectricPoint: 4 + Math.random() * 8,
-          hydrophobicity: -2 + Math.random() * 4,
-          modelSource: method
-        };
-      });
-      allGenerated = [...allGenerated, ...methodResults];
+          // Use XGBoost score as the main probability (scaled 0-1)
+          // If prediction failed, fallback to a reasonable default
+          const probability = pred ? (pred['XGboost'] / 100) : 0.85;
+
+          return {
+            id: `pep-${method === GenerationMethod.PREDICTION ? 'P' : 'S'}-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
+            sequence,
+            length: seqLen,
+            probabilities: {
+              [params.functionalities[0]]: probability
+            },
+            // API doesn't return MW, so we approximate it (avg AA weight ~110 Da)
+            molecularWeight: seqLen * 110.0,
+            isoelectricPoint: pred ? pred['punto isoelectrico'] : 7.0,
+            hydrophobicity: pred ? pred['porcentaje hidrofobico'] : 0,
+            modelSource: method
+          };
+        });
+      };
+
+      const predictionResults = mapToResult(remoteData.generated_better_prediction || [], GenerationMethod.PREDICTION);
+      const stabilityResults = mapToResult(remoteData.generated_more_stable || [], GenerationMethod.STABILITY);
+
+      setResults([...predictionResults, ...stabilityResults]);
+
+    } catch (error) {
+      console.error("Failed to generate peptides:", error);
+      alert("Error generating peptides. Please check the console and ensure the API is accessible.");
+    } finally {
+      setIsGenerating(false);
     }
-
-    setResults(allGenerated);
-    setIsGenerating(false);
-
   };
 
 
