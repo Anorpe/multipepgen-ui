@@ -36,8 +36,16 @@ import {
   FilterParams,
   ResearchInsight
 } from './types';
+import {
+  calculateMolecularWeight,
+  calculateIsoelectricPoint,
+  calculateHydrophobicity,
+  calculateNetCharge,
+  calculateBomanIndex
+} from './utils/biophysics';
 import PeptideTable from './components/PeptideTable';
 import PhysicochemicalAnalysis from './components/PhysicochemicalAnalysis';
+import DoubleRangeSlider from './components/DoubleRangeSlider';
 import { generatePeptidesRemote, predictPeptidesRemote } from './services/api';
 
 const AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY".split("");
@@ -136,6 +144,8 @@ const App: React.FC = () => {
         }
       }
 
+
+
       // Helper to map raw sequences to PeptideResult 
       const mapToResult = (sequences: string[], method: GenerationMethod): PeptideResult[] => {
         return sequences.map((sequence, i) => {
@@ -143,8 +153,6 @@ const App: React.FC = () => {
           const seqLen = sequence.length;
 
           // Use XGBoost score as the main probability (scaled 0-1)
-          // Default to 0 if prediction failed/missing for sorting/filtering purposes, 
-          // but keep individual scores as undefined to show error state in UI.
           const probability = pred ? (pred['XGboost'] / 100) : 0;
 
           // Calculate Consensus Score
@@ -160,6 +168,13 @@ const App: React.FC = () => {
             consensus = (scores.reduce((a, b) => a + b, 0) / (scores.length || 1)) / 100;
           }
 
+          // Calculate physicochemical properties locally
+          const mw = calculateMolecularWeight(sequence);
+          const pI = calculateIsoelectricPoint(sequence);
+          const hydro = calculateHydrophobicity(sequence);
+          const charge = calculateNetCharge(sequence);
+          const boman = calculateBomanIndex(sequence);
+
           return {
             id: `pep-${method === GenerationMethod.PREDICTION ? 'P' : 'S'}-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
             sequence,
@@ -169,13 +184,13 @@ const App: React.FC = () => {
             },
             modelSource: method,
 
-            // Map real physicochemical properties from API
-            molecularWeight: seqLen * 110.0, // API doesn't return MW, keeping approx
-            isoelectricPoint: pred ? pred['punto isoelectrico'] : undefined,
-            hydrophobicity: pred ? pred['porcentaje hidrofobico'] : undefined,
-            charge: pred ? pred['carga'] : undefined,
-            hydrophobicMoment: pred ? pred['momento hidrofobico'] : undefined,
-            bomanIndex: pred ? pred['indice de boman'] : undefined,
+            // Map real physicochemical properties from LOCAL CALCULATION
+            molecularWeight: mw,
+            isoelectricPoint: pI,
+            hydrophobicity: hydro,
+            charge: charge,
+            hydrophobicMoment: pred ? pred['momento hidrofobico'] : undefined, // Keep from API if available, or implement local later
+            bomanIndex: boman,
             wimley: pred ? pred['wimley'] : undefined,
             transmembraneHelices: pred ? pred['helices transmembrana'] : 'unknown',
 
@@ -494,7 +509,7 @@ const App: React.FC = () => {
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row items-center gap-6">
                   <div className="flex items-center gap-4 flex-1">
                     <div className="w-48">
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1 text-center">
                         Probability Threshold ({(filterParams.threshold * 100).toFixed(0)}%)
                       </label>
                       <input
@@ -508,24 +523,18 @@ const App: React.FC = () => {
                       />
                     </div>
 
-                    <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
-                      <div className="flex flex-col">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase">Min Len</label>
-                        <input
-                          type="number"
-                          value={filterParams.minLength}
-                          onChange={e => setFilterParams(p => ({ ...p, minLength: Number(e.target.value) }))}
-                          className="w-12 bg-transparent text-sm font-bold text-slate-700 outline-none border-b border-transparent focus:border-blue-500 transition-colors"
-                        />
+                    <div className="flex flex-col">
+                      <div className="mb-1 text-center">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase text-center">Length Range</label>
+                        <div className="text-[10px] font-bold text-slate-700 font-mono mt-0.5">{filterParams.minLength} - {filterParams.maxLength} aa</div>
                       </div>
-                      <span className="text-slate-300 font-light text-2xl">/</span>
-                      <div className="flex flex-col">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase">Max Len</label>
-                        <input
-                          type="number"
-                          value={filterParams.maxLength}
-                          onChange={e => setFilterParams(p => ({ ...p, maxLength: Number(e.target.value) }))}
-                          className="w-12 bg-transparent text-sm font-bold text-slate-700 outline-none border-b border-transparent focus:border-blue-500 transition-colors"
+                      <div className="px-2 py-1 w-48">
+                        <DoubleRangeSlider
+                          min={0}
+                          max={32}
+                          minVal={filterParams.minLength}
+                          maxVal={filterParams.maxLength}
+                          onChange={(min, max) => setFilterParams(p => ({ ...p, minLength: min, maxLength: max }))}
                         />
                       </div>
                     </div>
@@ -586,33 +595,7 @@ const App: React.FC = () => {
                       </div>
                     )}
 
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-bold text-slate-800 flex items-center gap-2"><BarChart3 size={18} className="text-blue-600" /> Model Performance</h4>
-                        <span className="text-xs font-bold text-slate-400 px-2 py-1 bg-slate-50 rounded">N={filteredResults.length}</span>
-                      </div>
-                      <div className="h-48">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={filteredResults}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis dataKey="id" hide />
-                            <YAxis domain={[0, 1]} />
-                            <Tooltip
-                              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                              formatter={(val: number) => [`${(val * 100).toFixed(1)}%`, 'Probability']}
-                            />
-                            <Bar dataKey={(p) => (Object.values((p as PeptideResult).probabilities)[0] as number)} radius={[4, 4, 0, 0]}>
-                              {filteredResults.map((entry, index) => (
-                                <Cell
-                                  key={`cell-${index}`}
-                                  fill={entry.modelSource === GenerationMethod.PREDICTION ? '#8b5cf6' : '#6366f1'}
-                                />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
+
 
 
                   </div>
