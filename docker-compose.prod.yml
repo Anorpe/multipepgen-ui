@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  multipepgen-ui:
+    build: .
+    container_name: multipepgen-ui-v2
+    restart: always
+    ports:
+      - "3000:80"
+    networks:
+      - peptools_network
+
+networks:
+  peptools_network:
+    external: true
