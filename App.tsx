@@ -157,8 +157,13 @@ const App: React.FC = () => {
         });
       };
 
-      const predictionResults = mapToResult(remoteData.generated_better_prediction || [], GenerationMethod.PREDICTION);
-      const stabilityResults = mapToResult(remoteData.generated_more_stable || [], GenerationMethod.STABILITY);
+      const predictionResults = params.methods.includes(GenerationMethod.PREDICTION)
+        ? mapToResult(remoteData.generated_better_prediction || [], GenerationMethod.PREDICTION)
+        : [];
+
+      const stabilityResults = params.methods.includes(GenerationMethod.STABILITY)
+        ? mapToResult(remoteData.generated_more_stable || [], GenerationMethod.STABILITY)
+        : [];
 
       setResults([...predictionResults, ...stabilityResults]);
 
@@ -177,11 +182,13 @@ const App: React.FC = () => {
     let fileName = `multipep_generation_${Date.now()}`;
 
     if (format === 'fasta') {
-      content = results.map(p => `>${p.id} | model=${p.modelSource} | p=${(Object.values(p.probabilities)[0] as number).toFixed(3)}\n${p.sequence}`).join('\n');
+      // Clean FASTA header as requested
+      content = results.map(p => `>${p.id} | model=${p.modelSource}\n${p.sequence}`).join('\n');
       fileName += ".fasta";
     } else if (format === 'csv') {
-      const headers = "ID,Sequence,Length,Model_Source,Main_Probability,pI,MW\n";
-      const rows = results.map(p => `${p.id},${p.sequence},${p.length},"${p.modelSource}",${Object.values(p.probabilities)[0]},${p.isoelectricPoint},${p.molecularWeight}`).join('\n');
+      // Remove Main_Probability, pI, MW columns
+      const headers = "ID,Sequence,Length,Model_Source\n";
+      const rows = results.map(p => `${p.id},${p.sequence},${p.length},"${p.modelSource}"`).join('\n');
       content = headers + rows;
       fileName += ".csv";
     } else {
@@ -198,16 +205,10 @@ const App: React.FC = () => {
   };
 
   const toggleMethod = (method: GenerationMethod) => {
-    setParams(prev => {
-      const isSelected = prev.methods.includes(method);
-      if (isSelected && prev.methods.length === 1) return prev;
-      return {
-        ...prev,
-        methods: isSelected
-          ? prev.methods.filter(m => m !== method)
-          : [...prev.methods, method]
-      };
-    });
+    setParams(prev => ({
+      ...prev,
+      methods: [method] // Enforce single selection
+    }));
   };
 
   const toggleFunctionality = (func: PeptideFunctionality) => {
@@ -243,7 +244,6 @@ const App: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-900 tracking-tight">MultiPepGen</h1>
-                <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest">Research Suite 3.0</p>
               </div>
             </div>
             <button
@@ -303,7 +303,9 @@ const App: React.FC = () => {
                 <input
                   type="number"
                   value={params.count}
-                  onChange={e => setParams(p => ({ ...p, count: Number(e.target.value) }))}
+                  min="1"
+                  max="100"
+                  onChange={e => setParams(p => ({ ...p, count: Math.min(100, Math.max(1, Number(e.target.value))) }))}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 />
               </div>
