@@ -15,9 +15,10 @@ interface Config {
 const config: Config = {
     api: {
         // URL del servicio de generación de péptidos
-        generationUrl: 'https://multipepgen-api.medellin.unal.edu.co',
+        // Usamos rutas relativas para que el proxy reverso del servidor (Nginx) maneje el redireccionamiento interno
+        generationUrl: '/api/generate',
         // URL del servicio de predicción de propiedades y clasificación
-        predictionUrl: 'https://ampclass-api.medellin.unal.edu.co',
+        predictionUrl: '/api/predict',
     },
 };
 
