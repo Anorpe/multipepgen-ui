@@ -19,7 +19,11 @@ export default defineConfig(({ mode }) => {
         '/api/predict': {
           target: config.api.predictionUrl,
           changeOrigin: true,
+          secure: false,
           rewrite: (path) => path.replace(/^\/api\/predict/, '/predict'),
+          headers: {
+            'Host': 'ampclass-api.medellin.unal.edu.co'
+          }
         }
       }
     },

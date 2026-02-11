@@ -46,26 +46,52 @@ const PeptideTable: React.FC<PeptideTableProps> = ({ peptides }) => {
               </td>
               <td className="px-6 py-4 text-sm text-slate-600 font-medium">{p.length} aa</td>
               <td className="px-4 py-4 text-right">
-                <span className={`text-sm ${getScoreColor(p.xgboostScore || 0)}`}>
-                  {p.xgboostScore?.toFixed(1)}%
-                </span>
+                {p.xgboostScore !== undefined ? (
+                  <span className={`text-sm ${getScoreColor(p.xgboostScore)}`}>
+                    {p.xgboostScore.toFixed(1)}%
+                  </span>
+                ) : (
+                  <span className="text-sm text-slate-400 font-bold">-</span>
+                )}
               </td>
-              <td className={`px-4 py-4 text-right text-sm ${getScoreColor(p.randomForestScore || 0)}`}>{p.randomForestScore?.toFixed(1)}%</td>
-              <td className={`px-4 py-4 text-right text-sm ${getScoreColor(p.neuralNetworkScore || 0)}`}>{p.neuralNetworkScore?.toFixed(1)}%</td>
-              <td className={`px-4 py-4 text-right text-sm ${getScoreColor(p.decisionTreeScore || 0)}`}>{p.decisionTreeScore?.toFixed(1)}%</td>
+              <td className="px-4 py-4 text-right">
+                {p.randomForestScore !== undefined ? (
+                  <span className={`text-sm ${getScoreColor(p.randomForestScore)}`}>{p.randomForestScore.toFixed(1)}%</span>
+                ) : (
+                  <span className="text-sm text-slate-400 font-bold">-</span>
+                )}
+              </td>
+              <td className="px-4 py-4 text-right">
+                {p.neuralNetworkScore !== undefined ? (
+                  <span className={`text-sm ${getScoreColor(p.neuralNetworkScore)}`}>{p.neuralNetworkScore.toFixed(1)}%</span>
+                ) : (
+                  <span className="text-sm text-slate-400 font-bold">-</span>
+                )}
+              </td>
+              <td className="px-4 py-4 text-right">
+                {p.decisionTreeScore !== undefined ? (
+                  <span className={`text-sm ${getScoreColor(p.decisionTreeScore)}`}>{p.decisionTreeScore.toFixed(1)}%</span>
+                ) : (
+                  <span className="text-sm text-slate-400 font-bold">-</span>
+                )}
+              </td>
               {/* Consensus Bar */}
               <td className="px-6 py-4 text-right bg-slate-50/30">
-                <div className="flex flex-col items-end gap-1">
-                  <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-500 transition-all duration-500"
-                      style={{ width: `${(p.consensusScore || 0) * 100}%` }}
-                    />
+                {p.consensusScore !== undefined ? (
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-500 transition-all duration-500"
+                        style={{ width: `${p.consensusScore * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-black text-slate-800">
+                      {(p.consensusScore * 100).toFixed(1)}%
+                    </span>
                   </div>
-                  <span className="text-sm font-black text-slate-800">
-                    {((p.consensusScore || 0) * 100).toFixed(1)}%
-                  </span>
-                </div>
+                ) : (
+                  <span className="text-sm text-slate-400 font-bold">-</span>
+                )}
               </td>
             </tr>
           ))}

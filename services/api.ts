@@ -1,4 +1,5 @@
 
+import config from '../config';
 import { GenerationParams, PeptideFunctionality } from '../types';
 
 interface RemoteGenerationResponse {
@@ -60,7 +61,11 @@ export const generatePeptidesRemote = async (params: GenerationParams): Promise<
         functionalities: functionalities
     };
 
-    const response = await fetch('/api/generate', {
+    // Use direct URL for production readiness (requires CORS on backend)
+    // Using /generate/ endpoint as per previous proxy config
+    const url = `${config.api.generationUrl}/generate/`;
+
+    const response = await fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -77,7 +82,11 @@ export const generatePeptidesRemote = async (params: GenerationParams): Promise<
 };
 
 export const predictPeptidesRemote = async (sequences: string[]): Promise<PredictionResponse[]> => {
-    const response = await fetch('/api/predict', {
+    // Use direct URL for production readiness
+    // Using /predict endpoint as per previous proxy config
+    const url = `${config.api.predictionUrl}/predict`;
+
+    const response = await fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

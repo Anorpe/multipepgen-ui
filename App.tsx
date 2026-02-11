@@ -66,6 +66,8 @@ const App: React.FC = () => {
   });
 
   const [results, setResults] = useState<PeptideResult[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [predictionError, setPredictionError] = useState<boolean>(false);
 
   // Apply Client-Side Filters
   const filteredResults = results.filter(p => {
@@ -98,6 +100,8 @@ const App: React.FC = () => {
   const generatePeptides = async () => {
     setIsGenerating(true);
     setIsSidebarOpen(false);
+    setError(null);
+    setPredictionError(false);
 
     try {
       // 1. Generate Sequences
@@ -127,6 +131,7 @@ const App: React.FC = () => {
           predictions.forEach(p => predictionMap.set(p.Peptido, p));
         } catch (err) {
           console.error("Prediction API failed, falling back to partial data:", err);
+          setPredictionError(true);
           // We continue, and mapToResult will handle missing data by using safe defaults
         }
       }
@@ -138,18 +143,22 @@ const App: React.FC = () => {
           const seqLen = sequence.length;
 
           // Use XGBoost score as the main probability (scaled 0-1)
-          // Default to 0 if prediction failed/missing
+          // Default to 0 if prediction failed/missing for sorting/filtering purposes, 
+          // but keep individual scores as undefined to show error state in UI.
           const probability = pred ? (pred['XGboost'] / 100) : 0;
 
           // Calculate Consensus Score
-          const scores = [
-            pred ? pred['XGboost'] : 0,
-            pred ? pred['Bosque Aleatorio'] : 0,
-            pred ? pred['Red Neuronal'] : 0,
-            pred ? pred['Arbol de Decisión'] : 0,
-            pred ? pred['Regresión Lógistica'] : 0
-          ];
-          const consensus = (scores.reduce((a, b) => a + b, 0) / (scores.length || 1)) / 100;
+          let consensus: number | undefined = undefined;
+          if (pred) {
+            const scores = [
+              pred['XGboost'],
+              pred['Bosque Aleatorio'],
+              pred['Red Neuronal'],
+              pred['Arbol de Decisión'],
+              pred['Regresión Lógistica']
+            ];
+            consensus = (scores.reduce((a, b) => a + b, 0) / (scores.length || 1)) / 100;
+          }
 
           return {
             id: `pep-${method === GenerationMethod.PREDICTION ? 'P' : 'S'}-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
@@ -162,20 +171,20 @@ const App: React.FC = () => {
 
             // Map real physicochemical properties from API
             molecularWeight: seqLen * 110.0, // API doesn't return MW, keeping approx
-            isoelectricPoint: pred ? pred['punto isoelectrico'] : 0,
-            hydrophobicity: pred ? pred['porcentaje hidrofobico'] : 0,
-            charge: pred ? pred['carga'] : 0,
-            hydrophobicMoment: pred ? pred['momento hidrofobico'] : 0,
-            bomanIndex: pred ? pred['indice de boman'] : 0,
-            wimley: pred ? pred['wimley'] : 0,
+            isoelectricPoint: pred ? pred['punto isoelectrico'] : undefined,
+            hydrophobicity: pred ? pred['porcentaje hidrofobico'] : undefined,
+            charge: pred ? pred['carga'] : undefined,
+            hydrophobicMoment: pred ? pred['momento hidrofobico'] : undefined,
+            bomanIndex: pred ? pred['indice de boman'] : undefined,
+            wimley: pred ? pred['wimley'] : undefined,
             transmembraneHelices: pred ? pred['helices transmembrana'] : 'unknown',
 
             // Individual Scores
-            xgboostScore: pred ? pred['XGboost'] : 0,
-            randomForestScore: pred ? pred['Bosque Aleatorio'] : 0,
-            neuralNetworkScore: pred ? pred['Red Neuronal'] : 0,
-            decisionTreeScore: pred ? pred['Arbol de Decisión'] : 0,
-            logisticRegressionScore: pred ? pred['Regresión Lógistica'] : 0,
+            xgboostScore: pred ? pred['XGboost'] : undefined,
+            randomForestScore: pred ? pred['Bosque Aleatorio'] : undefined,
+            neuralNetworkScore: pred ? pred['Red Neuronal'] : undefined,
+            decisionTreeScore: pred ? pred['Arbol de Decisión'] : undefined,
+            logisticRegressionScore: pred ? pred['Regresión Lógistica'] : undefined,
 
             // Final Consensus
             consensusScore: consensus
@@ -193,14 +202,13 @@ const App: React.FC = () => {
 
       setResults([...predictionResults, ...stabilityResults]);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to generate peptides:", error);
-      alert("Error generating peptides. Please check the console and ensure the API is accessible.");
+      setError(error.message || "An unexpected error occurred while generating peptides.");
     } finally {
       setIsGenerating(false);
     }
   };
-
 
 
   const downloadData = (format: 'fasta' | 'csv' | 'json') => {
@@ -427,6 +435,17 @@ const App: React.FC = () => {
                 ))}
               </div>
             </div>
+          ) : error ? (
+            <div className="h-[70vh] flex flex-col items-center justify-center border-2 border-dashed border-red-200 rounded-3xl bg-red-50/50 backdrop-blur-sm animate-in fade-in zoom-in duration-300">
+              <div className="bg-red-100 p-6 rounded-full mb-6">
+                <Zap className="w-12 h-12 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold text-red-800">Generation Failed</h3>
+              <p className="text-red-600 max-w-md text-center mt-2 font-medium">
+                {error}
+              </p>
+
+            </div>
           ) : results.length === 0 ? (
             <div className="h-[70vh] flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-3xl bg-white/50 backdrop-blur-sm">
               <div className="bg-slate-100 p-6 rounded-full mb-6">
@@ -544,6 +563,20 @@ const App: React.FC = () => {
               {activeTab === 'sequences' ? (
                 <>
                   <div className="grid grid-cols-1 gap-6">
+                    {predictionError && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-4">
+                        <div className="bg-amber-100 p-2 rounded-lg">
+                          <Zap size={20} className="text-amber-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-amber-900 text-sm">Prediction Service Unavailable</h4>
+                          <p className="text-amber-700 text-xs mt-1">
+                            We collected the generated sequences, but the property prediction service (AmpClass) is currently offline or unreachable. Scores and properties are displayed as unknown.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-bold text-slate-800 flex items-center gap-2"><BarChart3 size={18} className="text-blue-600" /> Model Performance</h4>

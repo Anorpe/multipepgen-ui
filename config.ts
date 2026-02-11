@@ -17,7 +17,7 @@ const config: Config = {
         // URL del servicio de generación de péptidos
         generationUrl: 'https://multipepgen-api.medellin.unal.edu.co',
         // URL del servicio de predicción de propiedades y clasificación
-        predictionUrl: 'http://ampclass-api.medellin.unal.edu.co',
+        predictionUrl: 'https://ampclass-api.medellin.unal.edu.co',
     },
 };
 
