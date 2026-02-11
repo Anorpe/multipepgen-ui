@@ -239,10 +239,19 @@ const App: React.FC = () => {
   };
 
   const toggleMethod = (method: GenerationMethod) => {
-    setParams(prev => ({
-      ...prev,
-      methods: [method] // Enforce single selection
-    }));
+    setParams(prev => {
+      const isSelected = prev.methods.includes(method);
+      if (isSelected && prev.methods.length === 1) {
+        // Prevent deselecting the last method
+        return prev;
+      }
+      return {
+        ...prev,
+        methods: isSelected
+          ? prev.methods.filter(m => m !== method)
+          : [...prev.methods, method]
+      };
+    });
   };
 
   const toggleFunctionality = (func: PeptideFunctionality) => {
