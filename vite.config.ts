@@ -10,29 +10,19 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       proxy: {
         '/api/generate': {
-          target: 'https://168.176.97.132',
+          target: env.VITE_GENERATION_API_URL,
           changeOrigin: true,
-          secure: false,
           rewrite: (path) => path.replace(/^\/api\/generate/, '/generate/'),
-          headers: {
-            'Host': 'multipepgen-api.medellin.unal.edu.co'
-          }
         },
         '/api/predict': {
-          target: 'http://168.176.97.132',
+          target: env.VITE_PREDICTION_API_URL,
           changeOrigin: true,
-          secure: false,
           rewrite: (path) => path.replace(/^\/api\/predict/, '/predict'),
-          headers: {
-            'Host': 'ampclass-api.medellin.unal.edu.co'
-          }
         }
       }
     },
     plugins: [react()],
     define: {
-      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
     },
     resolve: {
       alias: {
