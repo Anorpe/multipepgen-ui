@@ -59,11 +59,11 @@ const PeptideTable: React.FC<PeptideTableProps> = ({ peptides }) => {
                   <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-emerald-500 transition-all duration-500"
-                      style={{ width: `${p.consensusScore || 0}%` }}
+                      style={{ width: `${(p.consensusScore || 0) * 100}%` }}
                     />
                   </div>
                   <span className="text-sm font-black text-slate-800">
-                    {p.consensusScore?.toFixed(1)}%
+                    {((p.consensusScore || 0) * 100).toFixed(1)}%
                   </span>
                 </div>
               </td>
