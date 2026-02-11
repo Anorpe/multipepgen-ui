@@ -5,8 +5,12 @@ services:
     build: .
     container_name: multipepgen-ui-v2
     restart: always
-    ports:
-      - "80:80"
+    expose:
+      - "80"
+    environment:
+      - VIRTUAL_HOST=multipepgen.medellin.unal.edu.co
+      - LETSENCRYPT_HOST=multipepgen.medellin.unal.edu.co
+      - LETSENCRYPT_EMAIL=laboratorio@medellin.unal.edu.co
     networks:
       - peptools_network
 
