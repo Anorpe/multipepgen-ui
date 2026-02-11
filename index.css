@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+}
+
+.mono {
+    font-family: 'JetBrains Mono', monospace;
+}
