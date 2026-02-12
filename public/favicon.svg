@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Circular container -->
+  <circle cx="32" cy="32" r="30" fill="white" stroke="#3b82f6" stroke-width="4"/>
+  <!-- Simplified peptide structure (stylized helix/chain) -->
+  <path d="M16 32 C16 20, 24 20, 24 32 S32 44, 32 32 S40 20, 40 32 S48 44, 48 32" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
