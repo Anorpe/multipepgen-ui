@@ -1,5 +1,4 @@
 
-import config from '../config';
 import { GenerationParams, PeptideFunctionality } from '../types';
 
 interface RemoteGenerationResponse {
@@ -61,11 +60,9 @@ export const generatePeptidesRemote = async (params: GenerationParams): Promise<
         functionalities: functionalities
     };
 
-    // Use direct URL for production readiness (requires CORS on backend)
-    // Using /generate/ endpoint as per previous proxy config
-    const url = `${config.api.generationUrl}/generate/`;
-
-    const response = await fetch(url, {
+    // Use relative path to leverage Vite proxy in dev and Nginx proxy in prod
+    // This avoids CORS issues on the client side
+    const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -82,11 +79,8 @@ export const generatePeptidesRemote = async (params: GenerationParams): Promise<
 };
 
 export const predictPeptidesRemote = async (sequences: string[]): Promise<PredictionResponse[]> => {
-    // Use direct URL for production readiness
-    // Using /predict endpoint as per previous proxy config
-    const url = `${config.api.predictionUrl}/predict`;
-
-    const response = await fetch(url, {
+    // Use relative path to leverage Vite proxy in dev and Nginx proxy in prod
+    const response = await fetch('/api/predict', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
