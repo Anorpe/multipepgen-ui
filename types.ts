@@ -1,10 +1,11 @@
 
 export enum GenerationMethod {
-  PREDICTION = 'Better at Prediction',
+  PREDICTION = 'Better Prediction',
   STABILITY = 'More Stable'
 }
 
 export enum PeptideFunctionality {
+  ANTIMICROBIAL = 'Antimicrobial',
   ANTI_GRAM_POSITIVE = 'Anti-Gram Positive',
   ANTI_GRAM_NEGATIVE = 'Anti-Gram Negative',
   ANTIBACTERIAL = 'Antibacterial',

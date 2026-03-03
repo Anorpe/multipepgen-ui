@@ -42,6 +42,7 @@ export const generatePeptidesRemote = async (params: GenerationParams): Promise<
     // Simple mapping based on the enum values in types.ts
     // Types.ts enum values are descriptions like 'Anti-Gram Positive'. We need to map these to the backend keys.
     const functionalityMapping: Record<string, string> = {
+        [PeptideFunctionality.ANTIMICROBIAL]: 'antimicrobiano',
         [PeptideFunctionality.ANTI_GRAM_POSITIVE]: 'antigrampos',
         [PeptideFunctionality.ANTI_GRAM_NEGATIVE]: 'antigramneg',
         [PeptideFunctionality.ANTIBACTERIAL]: 'antibacteriano',

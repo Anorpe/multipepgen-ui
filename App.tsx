@@ -62,8 +62,8 @@ const LOADING_STEPS = [
 const App: React.FC = () => {
   const [params, setParams] = useState<GenerationParams>({
     count: 10,
-    methods: [GenerationMethod.PREDICTION],
-    functionalities: [PeptideFunctionality.ANTIBACTERIAL]
+    methods: [GenerationMethod.STABILITY],
+    functionalities: [PeptideFunctionality.ANTIMICROBIAL]
   });
 
   const [filterParams, setFilterParams] = useState<FilterParams>({

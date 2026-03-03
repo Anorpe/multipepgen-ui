@@ -37,7 +37,7 @@ const PeptideTable: React.FC<PeptideTableProps> = ({ peptides }) => {
                 </span>
               </td>
               <td className="px-6 py-4">
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-tighter ${p.modelSource === GenerationMethod.PREDICTION
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide whitespace-nowrap ${p.modelSource === GenerationMethod.PREDICTION
                   ? 'bg-purple-100 text-purple-700 border border-purple-200'
                   : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
                   }`}>
