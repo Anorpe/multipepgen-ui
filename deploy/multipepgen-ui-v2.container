@@ -1,0 +1,15 @@
+# multipepgen-ui-v2 — UI React servida por nginx en 80.
+# Caddy (caddy-proxy-1) enruta multipepgen.medellin.unal.edu.co a este nombre.
+[Unit]
+After=multipepgen-api-container.service ampclass-api-container.service
+
+[Container]
+ContainerName=multipepgen-ui-v2
+Image=localhost/multipepgen-ui:latest
+Network=inverpep_default.network
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
