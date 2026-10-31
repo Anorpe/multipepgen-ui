@@ -1,0 +1,13 @@
+# multipepgen-api-container — API FastAPI (generador CGAN) en 9000.
+# Imagen construida desde el repo Anorpe/multipepgen-api.
+[Container]
+ContainerName=multipepgen-api-container
+Image=localhost/multipepgen-api:latest
+Network=inverpep_default.network
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
